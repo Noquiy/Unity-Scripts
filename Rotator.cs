@@ -4,7 +4,7 @@ using System.Numerics;
 using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
-public class Rotator : MonoBehaviour
+public class RotatorAnimation : MonoBehaviour
 {
     public float acceleration = 125f;
     public float velocity = 0f;
