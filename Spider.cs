@@ -9,7 +9,6 @@ public class SpiderKing : MonoBehaviour
     [SerializeField] private float attackRadius;
     [SerializeField] private LayerMask layerEnemy;
     [SerializeField] private NavMeshAgent navAgent;
-    [SerializeField] private Transform attackPoint;
     [SerializeField] private float timeBtwAttacks;
 
     [SerializeField] private Animator animator;
@@ -31,28 +30,25 @@ public class SpiderKing : MonoBehaviour
 
     private void Update()
     {
-        if (enemyFound == false)
-        {
-            SearchForEnemy();
-        }
-
+        SearchForEnemy();
         WithinAttackRadius();
         Attack();
     }
 
     void SearchForEnemy()
-    { 
+    {
+        if (!enemyFound){
             //Search and choose random Enemy
             Collider[] Enemies = Physics.OverlapSphere(transform.position, searchRadius, layerEnemy);
             Random random = new Random();
-            int randomInt = random.Next(Enemies.Length);
+            int randomInt = random.Next(Enemies.Length); 
             enemy = Enemies[randomInt].transform;
             enemyFound = true;
             //Go for enemy
             navAgent.SetDestination(enemy.position);
             transform.LookAt(enemy);
             animator.SetBool("Crawl", true);
-        
+        }
     }
 
     bool WithinAttackRadius()
@@ -78,16 +74,15 @@ public class SpiderKing : MonoBehaviour
             {
                 alreadyAttacked = true;
                 Invoke(nameof(ResetAttack), timeBtwAttacks);
-                //Attack Code
                 animator.SetTrigger("BiteAttack");
-                Collider[] hitEnemies = Physics.OverlapSphere(attackPoint.position, attackRadius, layerEnemy);
-                foreach (var enemy in hitEnemies)
+                enemy.GetComponent<Enemy>().TakeDamage(attackDamage);
+                if (enemy.GetComponent<Enemy>().amIDead)
                 {
-                    enemy.GetComponent<Enemy>().TakeDamage(attackDamage);
+                    enemyFound = false;
+                    SearchForEnemy();
                 }
             }
         }
-        
     }
 
     void ResetAttack()
@@ -95,8 +90,9 @@ public class SpiderKing : MonoBehaviour
         alreadyAttacked = false;
     }
 
-    public void Health(int damage)
+    public void TakeDamage(int damage)
     {
         currentHealth -= damage;
     }
+    
 }
