@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 using Random = System.Random;
@@ -11,8 +12,14 @@ public class Friendly : MonoBehaviour
     [SerializeField] private float timeBtwAttacks = 1f;
     [SerializeField] private int attackDamage = 20;
 
+    [SerializeField] private int maxHealth;
+
+    [HideInInspector] public bool amIDead;
+    
     private bool enemyFound, alreadyAttacked;
     private Transform enemy;
+    private int currentHealth;
+    private Vector3 enemyPosition;
 
     private void Awake()
     {
@@ -20,12 +27,23 @@ public class Friendly : MonoBehaviour
         _navMeshAgent = GetComponent<NavMeshAgent>();
         enemyFound = false;
         alreadyAttacked = false;
+        amIDead = false;
+        currentHealth = maxHealth;
     }
 
     private void Update()
     {
-        SearchForEnemy();
-        Attack();
+        if (!enemyFound)
+        {
+            Invoke(nameof(SearchForEnemy),.8f);
+        }
+        else
+        {
+            SearchForEnemy();
+            Attack();
+        }
+
+        
     }
 
     void SearchForEnemy()
@@ -36,17 +54,18 @@ public class Friendly : MonoBehaviour
             Random random = new Random();
             int randomInt = random.Next(Enemies.Length);
             enemy = Enemies[randomInt].transform;
-            _navMeshAgent.SetDestination(enemy.position);
-            transform.LookAt(enemy);
-            _animator.SetBool("Crawl", true);
+            enemyPosition = enemy.position;
             enemyFound = true;
         }
+        _navMeshAgent.SetDestination(enemyPosition);
+        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(enemyPosition), Time.deltaTime);
+        _animator.SetBool("Crawl", true);
     }
 
     void Attack()
     {
         float distance = Vector3.Distance(transform.position, enemy.position);
-        if (distance < attackRadius)
+        if (distance < attackRadius && enemyFound)
         {
             _navMeshAgent.SetDestination(transform.position);
             _animator.SetBool("Crawl", false);
@@ -62,12 +81,34 @@ public class Friendly : MonoBehaviour
                 }
             }
         }
+        
     }
 
     void ResetAttack()
     {
         alreadyAttacked = false;
     }
+
+    public void TakeDamage(int damage)
+    {
+    
+        currentHealth -= damage;
+        _animator.SetTrigger("Hurt");
+        if (currentHealth <= 0)
+        {
+            Dead();
+        }
+    }
+
+    void Dead()
+    {
+        amIDead = true;
+        tag = "Dead";
+        _animator.SetTrigger("Dead");
+        GetComponent<Rigidbody>().isKinematic = true;
+        GetComponent<Friendly>().enabled = false;
+    }
+    
 }
 
 
