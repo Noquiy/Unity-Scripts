@@ -1,0 +1,73 @@
+using UnityEngine;
+using UnityEngine.AI;
+using Random = System.Random;
+
+public class Friendly : MonoBehaviour
+{
+    [SerializeField] private Animator _animator;
+    [SerializeField] private NavMeshAgent _navMeshAgent;
+
+    [SerializeField] private float attackRadius = 1f;
+    [SerializeField] private float timeBtwAttacks = 1f;
+    [SerializeField] private int attackDamage = 20;
+
+    private bool enemyFound, alreadyAttacked;
+    private Transform enemy;
+
+    private void Awake()
+    {
+        _animator = GetComponent<Animator>();
+        _navMeshAgent = GetComponent<NavMeshAgent>();
+        enemyFound = false;
+        alreadyAttacked = false;
+    }
+
+    private void Update()
+    {
+        SearchForEnemy();
+        Attack();
+    }
+
+    void SearchForEnemy()
+    {
+        if (!enemyFound)
+        {
+            GameObject[] Enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            Random random = new Random();
+            int randomInt = random.Next(Enemies.Length);
+            enemy = Enemies[randomInt].transform;
+            _navMeshAgent.SetDestination(enemy.position);
+            transform.LookAt(enemy);
+            _animator.SetBool("Crawl", true);
+            enemyFound = true;
+        }
+    }
+
+    void Attack()
+    {
+        float distance = Vector3.Distance(transform.position, enemy.position);
+        if (distance < attackRadius)
+        {
+            _navMeshAgent.SetDestination(transform.position);
+            _animator.SetBool("Crawl", false);
+            if (!alreadyAttacked)
+            {
+                alreadyAttacked = true;
+                Invoke(nameof(ResetAttack), timeBtwAttacks);
+                _animator.SetTrigger("BiteAttack");
+                enemy.GetComponent<Enemy>().TakeDamage(attackDamage);
+                if (enemy.GetComponent<Enemy>().amIDead)
+                {
+                    enemyFound = false;
+                }
+            }
+        }
+    }
+
+    void ResetAttack()
+    {
+        alreadyAttacked = false;
+    }
+}
+
+
